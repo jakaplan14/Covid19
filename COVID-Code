@@ -1,0 +1,168 @@
+import requests
+import json
+import pandas as pd
+import ipywidgets as widgets
+import folium
+
+
+def get_coordinates(search):
+    url = 'https://nominatim.openstreetmap.org/search'
+    options = {'q' : search, 'format':'json'}
+    response = requests.get(url, params = options)
+    geodata = response.json()
+    coords = {'lat' : float(geodata[0]['lat']), 'lng' : float(geodata[0]['lon'])} 
+    return coords
+
+#input location
+location = input("Enter a Country: ")
+get_coordinates(location)
+coords = get_coordinates(location)
+#print coordinates
+print("%s is located at (%f,%f)" %(location, coords['lat'], coords['lng']))
+print("Please select the same country: ")
+
+#sets coordinates to variable
+coordinate = coords['lat'], coords['lng']
+
+
+#imports all information from api
+url1 = 'https://api.covid19api.com/summary'
+response = requests.get(url1)
+data = response.json()
+data
+
+
+#imports countries list from api
+url2 = "https://api.covid19api.com/countries"
+payload = {}
+headers= {}
+response = requests.request("GET", url2, headers=headers, data = payload)
+country_slug_names = response.json()
+
+
+#opens list
+country_list = []
+#fills list with tuples
+for x in country_slug_names:
+    combo = x
+    country = combo['Country']
+    slug = combo['Slug']
+    #print("%s, %s" %(country, slug))
+    country_list.append((country, slug))
+
+#sorts list alphabetically
+country_list.sort()
+
+#creates dropdown menu
+drop = widgets.Dropdown(
+    options = country_list,
+    description='Country:',
+)
+drop
+
+
+
+country_name = country_list[drop.index]
+#country_name[0]
+
+
+#prints title
+#print("Number of cases in chosen country:")
+      
+#calls api of confirmed cases using the country from the dropdown menu
+url3 = "https://api.covid19api.com/total/country/%s/status/confirmed" %drop.value
+payload = {}
+headers= {}
+response = requests.request("GET", url3, headers=headers, data = payload)
+case_count = response.json()
+
+#opens list
+case_list = []
+#fills list with data
+for x in case_count:
+    #print(x)
+    case = x
+    countryC = case['Cases']
+    case_list.append(countryC)
+#shows only the most recent number of cases in each place
+recent_case = case_count[-1]
+#recent_case['Cases']
+
+#prints title
+#print("Number of deaths in chosen country: ")
+
+#calls api of confirmed COVID deaths using the country from the dropdown menu
+url4 = "https://api.covid19api.com/live/country/%s/status/confirmed" %drop.value
+payload = {}
+headers= {}
+response = requests.request("GET", url4, headers=headers, data = payload)
+death_count = response.json()
+
+#opens list
+death_list = []
+#fills list with data
+for x in death_count:
+    #print(x)
+    death = x
+    countryD = death['Deaths']
+    death_list.append(countryD)
+#shows only the most recent number of deaths in each place
+recent_death = death_count[-1]
+#recent_death['Deaths']
+
+#prints title
+#print("Number of people to recover in chosen country: ")
+
+#calls api of confirmed COVID recoveries using the country from the dropdown menu
+url5 = "https://api.covid19api.com/live/country/%s/status/confirmed" %drop.value
+payload = {}
+headers= {}
+response = requests.request("GET", url5, headers=headers, data = payload)
+recover_count = response.json()
+
+#opens list
+recover_list = []
+#fills list with data
+for x in recover_count:
+    #print(x)
+    recover = x
+    countryR = recover['Recovered']
+    death_list.append(countryR)
+#shows only the most recent number of recoveries in each place
+recent_recover = recover_count[-1]
+#recent_recover['Recovered']
+
+
+
+
+
+
+
+
+
+#creates Pandas chart
+data_frame = pd.DataFrame({'Country Name' : [country_name[0]],'Cases' : [recent_case['Cases']], 
+                           'Recovered' : [recent_recover['Recovered']], 'Deaths' : [recent_death['Deaths']]})
+data_frame
+
+
+
+
+#API call for countries of the world map
+url6 = 'https://raw.githubusercontent.com/python-visualization/folium/master/examples/data/world-countries.json'
+response = requests.get(url6)
+data = response.json()
+
+#creates map highlights specified location
+countries_geojson = url6
+center_map = coordinate
+map = folium.Map(center_map, zoom_start = 4, tiles = 'Open Street Map')
+folium.Choropleth(geo_data = countries_geojson, data = data_frame,
+                 columns = ['Country Name', 'Cases', 'Recovered', 'Deaths'], key_on = 'feature.properties.name', 
+                 fill_color = 'BuPu').add_to(map)
+#prints map with a pop up displaying information
+pos = coordinate
+message = f"Deaths:%s Cases:%s Recovered:%s" %(recent_death['Deaths'],recent_case['Cases'] ,recent_recover['Recovered']) 
+marker = folium.Marker(location = pos, popup = message)
+map.add_child(marker)
+map
