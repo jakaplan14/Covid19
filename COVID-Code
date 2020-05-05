@@ -5,6 +5,10 @@ import ipywidgets as widgets
 import folium
 
 
+-------------END OF CELL-----------
+
+
+
 def get_coordinates(search):
     url = 'https://nominatim.openstreetmap.org/search'
     options = {'q' : search, 'format':'json'}
@@ -59,6 +63,12 @@ drop = widgets.Dropdown(
     description='Country:',
 )
 drop
+
+
+
+
+----------END OF CELL---------
+
 
 
 
@@ -134,16 +144,16 @@ recent_recover = recover_count[-1]
 
 
 
-
-
-
-
-
-
 #creates Pandas chart
 data_frame = pd.DataFrame({'Country Name' : [country_name[0]],'Cases' : [recent_case['Cases']], 
                            'Recovered' : [recent_recover['Recovered']], 'Deaths' : [recent_death['Deaths']]})
 data_frame
+
+
+
+
+------------END OF CELL-----------
+
 
 
 
